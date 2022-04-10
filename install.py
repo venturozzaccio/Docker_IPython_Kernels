@@ -34,7 +34,11 @@ kernel = json.dumps(
     }
 )
 
-kernel_file.write_text(kernel)
+try:
+    kernel_file.write_text(kernel)
+except Exception as err:
+    print('Error writing the new kernel:', err)
+    exit(1)
 
 client = docker.from_env()
 client.images.build(path=dockerfile_folder, tag=tag)

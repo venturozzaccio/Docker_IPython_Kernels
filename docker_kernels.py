@@ -12,7 +12,6 @@ def set_connection_ip(connection_file, ip: str = "0.0.0.0"):
     connection["ip"] = ip
     connection["kernel_name"] = "my_custom_kernel"
     Path(connection_file).write_text(json.dumps(connection))
-
     return connection
 
 parser = argparse.ArgumentParser(description="Running new container")
@@ -20,10 +19,19 @@ parser.add_argument("connection_file")
 parser.add_argument("my_container")
 
 args = parser.parse_args()
-f = open(args.connection_file)
-set_connection_ip(args.connection_file)
 
-data = json.load(f)
+try:
+    with open('args.connection_file', 'w') as f:
+        set_connection_ip(f)
+        raise 
+        data = json.load(f)
+except ValueError: 
+    print('Decoding JSON has failed')
+    exit()
+except Exception as err:
+    print('Error reading connection_file:', err)
+    exit()
+
 image_name = str(args.my_container)
 
 ports = [
@@ -52,14 +60,17 @@ connection_file_mount = docker.types.Mount(
     read_only=False,
 )
 
-containers.run(
-    image=image_name,
-    tty=True,
-    command=f"python -m ipykernel_launcher -f {CONTAINER_CONNECTION_SPEC_PATH}",
-    auto_remove=True,
-    environment=env_vars,
-    mounts=[connection_file_mount],
-    ports=port_mapping,
-    stdout=True,
-    stderr=True,
-)
+try:
+    containers.run(
+        image=image_name,
+        tty=True,
+        command=f"python -m ipykernel_launcher -f {CONTAINER_CONNECTION_SPEC_PATH}",
+        auto_remove=True,
+        environment=env_vars,
+        mounts=[connection_file_mount],
+        ports=port_mapping,
+        stdout=True,
+        stderr=True,
+    )
+except Exception as err:
+    print('Error running the container:', err)
