@@ -4,7 +4,8 @@ import argparse
 import json
 from pathlib import Path
 
-import docker
+import docker, sys
+import traceback
 
 
 def set_connection_ip(connection_file, ip: str = "0.0.0.0"):
@@ -14,6 +15,7 @@ def set_connection_ip(connection_file, ip: str = "0.0.0.0"):
     Path(connection_file).write_text(json.dumps(connection))
     return connection
 
+
 parser = argparse.ArgumentParser(description="Running new container")
 parser.add_argument("connection_file")
 parser.add_argument("my_container")
@@ -21,15 +23,17 @@ parser.add_argument("my_container")
 args = parser.parse_args()
 
 try:
-    with open('args.connection_file', 'w') as f:
-        set_connection_ip(f)
-        raise 
-        data = json.load(f)
-except ValueError: 
-    print('Decoding JSON has failed')
+    set_connection_ip(args.connection_file)
+    data = json.loads(Path(args.connection_file).read_text())
+except ValueError:
+    print("Decoding JSON has failed")
+    ex_type, ex, tb = sys.exc_info()
+    traceback.print_tb(tb)
     exit()
 except Exception as err:
-    print('Error reading connection_file:', err)
+    print("Error reading connection_file:", err)
+    ex_type, ex, tb = sys.exc_info()
+    traceback.print_tb(tb)
     exit()
 
 image_name = str(args.my_container)
@@ -73,4 +77,4 @@ try:
         stderr=True,
     )
 except Exception as err:
-    print('Error running the container:', err)
+    print("Error running the container:", err)
